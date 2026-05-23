@@ -1,0 +1,96 @@
+{
+  "name": "Combat",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+        "$path": "src/replicated",
+
+        "Remotes": {
+            "$className": "Folder",
+
+            "DamageEvent": {
+                "$className": "RemoteEvent"
+            },
+
+            "BlockEvent": {
+                "$className": "RemoteEvent"
+            },
+
+            "AttackEvent": {
+                "$className": "RemoteEvent"
+            },
+            
+            "DeathEvent": {
+                "$className": "RemoteEvent"
+            },
+             "GetUpCharacter": {
+                "$className": "RemoteEvent"
+             },
+            "UnRagdollEvent": {
+                "$className": "RemoteEvent"
+            }
+        }
+    },
+
+    "ServerScriptService": {
+        "$path": "src/server"
+    },
+
+    "ReplicatedFirst": {
+        "$path": "src/replicatefirst"
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/starterps"
+      }
+    },
+
+    "Workspace": {
+      "$properties": {
+        "FilteringEnabled": true
+      },
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Color": [
+            0.38823,
+            0.37254,
+            0.38823
+          ],
+          "Locked": true,
+          "Position": [
+            0,
+            -10,
+            0
+          ],
+          "Size": [
+            512,
+            20,
+            512
+          ]
+        }
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Ambient": [
+          0,
+          0,
+          0
+        ],
+        "Brightness": 2,
+        "GlobalShadows": true,
+        "Outlines": false,
+        "Technology": "Voxel"
+      }
+    },
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    }
+  }
+}
