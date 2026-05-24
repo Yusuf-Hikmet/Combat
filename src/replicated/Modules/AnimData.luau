@@ -69,7 +69,9 @@ return {
         }
         
     },
-
+    Walk = "rbxassetid://74647033055142",
+    Run = "rbxassetid://85775044489327",
+    
     GameUsedAllAnims = {
         -- Dash
         "rbxassetid://79808745054557",
@@ -87,5 +89,8 @@ return {
         "rbxassetid://92996601034298",
         -- Block
         "rbxassetid://72920129123463",
+        -- Walk & Run
+        "rbxassetid://74647033055142",
+        "rbxassetid://85775044489327"
     } 
 }

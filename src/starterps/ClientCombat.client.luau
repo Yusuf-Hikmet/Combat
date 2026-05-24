@@ -8,31 +8,77 @@ local Global = ReplicatedStorage:WaitForChild("Global")
 
 local Types = require(Global:WaitForChild("Types"))
 local CombatModule = require(Modules:WaitForChild("CombatHandler"))
+local AnimData = require(Modules:WaitForChild("AnimData"))
 
 local DeathEvent = Remotes:WaitForChild("DeathEvent", 5) :: RemoteEvent
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local LocalPlayer = PlayersService.LocalPlayer
+local Camera = workspace.CurrentCamera
 local Combat = CombatModule.new() :: Types.CombatHandler
 
 Combat:ListenEvents()
 
-local function CharacterAddedFunction(Character: Model)
+local function CharacterAdded(Character: Model)
     local Humanoid = Character:WaitForChild("Humanoid", 5) :: Humanoid
     if not Humanoid then warn(`[ClientCombat] line: {debug.info(1, "l")}, function: {debug.info(1, "n")}\n`,`Humanoid not found in Character`) ;return end
     local hrp = Character:WaitForChild("HumanoidRootPart", 5) :: Part
     if not hrp then warn(`[ClientCombat] line: {debug.info(1, "l")}, function: {debug.info(1, "n")}\n`,`HumanoidRootPart not found in Character`) ;return end
+    local Animator = Humanoid:WaitForChild("Animator", 5) :: Animator
+    if not Animator then warn(`[ClientCombat] line: {debug.info(1, "l")}, function: {debug.info(1, "n")}\n`,`Animator not found in Humanoid`) ;return end
 
     Humanoid.Died:Connect(function()
         DeathEvent:FireServer(Character)
     end)
 
-    Humanoid.StateChanged:Connect(function(old, new)
-        if new == Enum.HumanoidStateType.Landed then
-             if hrp:FindFirstChild(`Unragdollbodyvelocity`) then 
-                hrp:FindFirstChild(`Unragdollbodyvelocity`):Destroy()
+    local CurrentTrack -- AnimationTrack?
+
+    local function UpdateAnimation(Anim: string): () -- string only(rbxassetid)
+        if not Combat:CanAttack() then
+            if CurrentTrack then
+                CurrentTrack:Stop()
+                CurrentTrack = nil
             end
+            return
+        end
+        if CurrentTrack and CurrentTrack.Animation.AnimationId == Anim then return end
+
+        if CurrentTrack then
+            CurrentTrack:Stop()
+            CurrentTrack = nil
+        end
+        if AnimData.Run == Anim then
+            Humanoid.WalkSpeed = 20
+        elseif AnimData.Walk == Anim then
+            Humanoid.WalkSpeed = 16
+        end
+
+        local Animation = Instance.new("Animation")
+        Animation.AnimationId = Anim
+        CurrentTrack = Animator:LoadAnimation(Animation) 
+        CurrentTrack:Play() 
+
+        Animation:Destroy()
+    end
+
+    task.spawn(function()
+        while Humanoid do
+            if Humanoid.MoveDirection.Magnitude > 0 then
+                local CameraDot = Camera.CFrame.LookVector:Dot(hrp.CFrame.LookVector)
+                
+                if CameraDot > 0 then
+                    UpdateAnimation(AnimData.Run)
+                else
+                    UpdateAnimation(AnimData.Walk)
+                end
+            else
+                if CurrentTrack then
+                    CurrentTrack:Stop()
+                    CurrentTrack = nil
+                end
+            end
+            task.wait(0.2)
         end
     end)
 end
@@ -91,4 +137,4 @@ UserInputService.InputEnded:Connect(function(Input, GameProcessed)
     
 end)
 
-LocalPlayer.CharacterAdded:Connect(CharacterAddedFunction)
+LocalPlayer.CharacterAdded:Connect(CharacterAdded)

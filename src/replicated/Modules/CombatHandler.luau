@@ -69,20 +69,9 @@ function CombatHandler:ListenEvents(): ()
         local hrp = Character:FindFirstChild("HumanoidRootPart") :: BasePart
         if not humanoid or not hrp then return end
         
-        local bv = Instance.new("BodyVelocity")
-        bv.Velocity = Vector3.zero
-        bv.MaxForce = Vector3.new(0, math.huge, 0)
-        bv.Name = `Unragdollbodyvelocity`
-        bv.Parent = hrp
-
         hrp.AssemblyAngularVelocity = Vector3.zero
         hrp.AssemblyLinearVelocity = Vector3.zero
         humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-
-        task.wait(.3)
-        if bv then
-            bv:Destroy()
-        end
     end)
 end
 
@@ -256,6 +245,9 @@ function CombatHandler:Attack(): ()
     if not self:CanAttack({
         W = true, A = true, D = true, IsDashing = true
     }) then return end
+    
+    local Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    Humanoid.WalkSpeed = 16
 
     self.Hit = false
     self.Cooldown = true
@@ -272,7 +264,6 @@ function CombatHandler:Attack(): ()
     self.ComboCount += 1
     local ComboCount = self.ComboCount
 
-        print(`ComboCount: {ComboCount}`)
     task.delay(AnimData['Attack' .. ComboCount].Cooldown, function()
         self.Cooldown = false
     end)
@@ -285,15 +276,14 @@ function CombatHandler:Attack(): ()
             self.LostCombo = nil
         end
 
-        local Humaniod = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if Humaniod then
-            Humaniod.WalkSpeed = 0
-            Humaniod.JumpPower = 0
+        if Humanoid then
+            Humanoid.WalkSpeed = 0
+            Humanoid.JumpPower = 0
 
             task.delay(AnimData['Attack4'].Cooldown, function()
-                if Humaniod then
-                    Humaniod.WalkSpeed = 16
-                    Humaniod.JumpPower = 50
+                if Humanoid then
+                    Humanoid.WalkSpeed = 16
+                    Humanoid.JumpPower = 50
                 end
             end)
         else
@@ -476,7 +466,7 @@ function CombatHandler:Dash(PressedKey: Enum.KeyCode): ()
     end
 
     local t: number = 0
-    local conn: any; conn = RunService.PreRender:Connect(function(dt)  
+    local conn: RBXScriptConnection; conn = RunService.PreRender:Connect(function(dt)  
         t += dt
 
         if PressedKey == Enum.KeyCode.S then
@@ -488,7 +478,6 @@ function CombatHandler:Dash(PressedKey: Enum.KeyCode): ()
 
         if t >= AnimData.Dashs.Durations[PressedKey] - .3 then
             conn:Disconnect()
-            conn = nil
             Humanoid.AutoRotate = true
             self.IsDashing = false
             self.DashKey = Enum.KeyCode.Unknown
