@@ -58,6 +58,7 @@ local function RagdollCharacter(Character: Model, SelfHumanodRootPart: Instance?
 			a1.CFrame = joint.C1
 
 			local ball = Instance.new("BallSocketConstraint")
+            ball.Name = `RagdollBallSocketConstraint`
 			ball.Attachment0 = a0
 			ball.Attachment1 = a1
 			ball.LimitsEnabled = true
@@ -108,14 +109,24 @@ local function UnRagdollCharacter(Character: Model): ()
 
         return 
     end
-
-    local hrp = Character:FindFirstChild("HumanoidRootPart") :: BasePart
     
     humanoid.BreakJointsOnDeath = true
     humanoid.PlatformStand = false
     humanoid:ChangeState(Enum.HumanoidStateType.Landed)
     humanoid.HipHeight = 0
     humanoid.AutoRotate = true
+
+    for _, any in pairs(Character:GetDescendants()) do
+        if any:IsA("Attachment") then
+            if any.Name == `RagdollAttachment0` or any.Name == `RagdollAttachment1` then
+                any:Destroy()
+            end
+        end
+
+        if any:IsA("BallSocketConstraint") and any.Name == `RagdollBallSocketConstraint` then
+            any:Destroy()
+        end
+    end
 
     for _, joint in pairs(Character:GetDescendants()) do
         if joint:IsA("Motor6D") then
@@ -124,51 +135,17 @@ local function UnRagdollCharacter(Character: Model): ()
 
             if not part0 or not part1 or not part0:IsA("BasePart") or not part1:IsA("BasePart") then continue end
 
-            local a0 = part0:FindFirstChildOfClass("Attachment")
-            local a1 = part1:FindFirstChildOfClass("Attachment")
-
-            if a0 then a0:Destroy() end
-            if a1 then a1:Destroy() end
-
-            local ball0 = part0:FindFirstChildOfClass("BallSocketConstraint")
-            local ball1 = part1:FindFirstChildOfClass("BallSocketConstraint")
-
-            if ball0 then ball0:Destroy() end
-            if ball1 then ball1:Destroy() end
-
             joint.Enabled = true
 
             part0.CanCollide = false
             part1.CanCollide = false
         end
     end
+
     UnRagdollEvent:FireClient(Player)
 
-    if humanoid and humanoid.Parent then
-        local onesecond = 0
-        while true do
-            if onesecond >= 1 then break end
-            task.wait(.1)
-            onesecond += .1
-            humanoid.HipHeight = 0
-            hrp.AssemblyLinearVelocity = Vector3.new(
-                hrp.AssemblyLinearVelocity.X,
-                math.min(hrp.AssemblyLinearVelocity.Y, 0),
-                hrp.AssemblyLinearVelocity.Z
-            )
-            Player:SetAttribute(`CanTakeDamage`, true)
-        end
-    else 
-        warn(`[EventsHandler] line: {debug.info(1, "l")}, function: {debug.info(1, "n")}\n`,`Humanoid not found or has no parent in UnRagdollCharacter`)
-    end
-
-    for _, Attachment in pairs(Character:GetDescendants()) do
-        if Attachment:IsA("Attachment") then
-            if Attachment.Name == `RagdollAttachment0` or Attachment.Name == `RagdollAttachment1` then
-                Attachment:Destroy()
-            end
-        end
-    end
+    humanoid.HipHeight = 0
+    Player:SetAttribute(`CanTakeDamage`, true)
 
     return
 end
@@ -271,14 +248,16 @@ local function DamageEvent(Player: Player, EnemyCharacter: Model, HitNumber: num
         end)
 
         EnemyHumanoid:TakeDamage(Damage)
+        EnemyPlayer:SetAttribute(`LastTouchName`, Player.Name)
         return
     end
 
     Player:SetAttribute(`IsBlocking`, false)
     AnimationLoader(EnemyCharacter, AnimData['Hit'..HitNumber].AnimationId, HitNumber)
     StopCharacterAndOffAttack(EnemyCharacter, AnimData['Hit'..HitNumber].StunTime)
-    EnemyHumanoid:TakeDamage(Damage)
 
+    EnemyHumanoid:TakeDamage(Damage)
+    EnemyPlayer:SetAttribute(`LastTouchName`, Player.Name)
     return
 end
 
@@ -297,6 +276,16 @@ local function DeathEvent(Player: Player, Character: Model): ()
     if Humanoid and Humanoid.Health > 0 then return end
 
     RagdollCharacter(Character)
+    print(`Died {Character.Name}`)
+    local DiedPlayer = PlayersService:GetPlayerFromCharacter(Character)
+
+    if DiedPlayer and DiedPlayer:GetAttribute(`LastTouchName`) then
+        local KillerPlayer = PlayersService:FindFirstChild(DiedPlayer:GetAttribute(`LastTouchName`))
+
+        if KillerPlayer then
+            KillerPlayer.leaderstats.Kills.Value += 1
+        end
+    end
 
     if Humanoid and Humanoid.Health <= 0 then
         task.delay(3, function()
@@ -321,10 +310,10 @@ local function GetUpEvent(Player: Player): ()
     if not GetUppedPlayers[Player.UserId] then
         GetUppedPlayers[Player.UserId] = tick()
     else
-        if tick() - GetUppedPlayers[Player.UserId] > 15 then 
+        if tick() - GetUppedPlayers[Player.UserId] > AnimData['Hit4'].StunTime then 
             GetUppedPlayers[Player.UserId] = tick()
         else
-            warn(`[EventsHandler] line: {debug.info(1, "l")}, function: {debug.info(1, "n")}\n`,`Player is on cooldown for GetUpEvent. Time left: {15 - (tick() - GetUppedPlayers[Player.UserId])} seconds`)
+            warn(`[EventsHandler] line: {debug.info(1, "l")}, function: {debug.info(1, "n")}\n`,`Player is on cooldown for GetUpEvent. Time left: {AnimData['Hit4'].StunTime - (tick() - GetUppedPlayers[Player.UserId])} seconds`)
             return 
         end
     end

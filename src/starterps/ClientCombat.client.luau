@@ -31,6 +31,8 @@ local function CharacterAdded(Character: Model)
     Humanoid.Died:Connect(function()
         DeathEvent:FireServer(Character)
     end)
+    
+    Humanoid.BreakJointsOnDeath = false
 
     local CurrentTrack -- AnimationTrack?
 
